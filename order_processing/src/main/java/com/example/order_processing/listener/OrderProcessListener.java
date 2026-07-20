@@ -29,6 +29,7 @@ public class OrderProcessListener {
         System.out.println("\n [ORDER LISTENER] Grabbed Order: "+ orderDTO.getOrderId());
         try {
             //Send to CMS Adapter
+            //convert step automatically serializes (translates) your orderDTO object into a lightweight, standardized text string—usually JSON (or byte arrays).
             rabbitTemplate.convertAndSend(cms_adapter_queue,orderDTO);
             channel.basicAck(tag, false);
             System.out.println("Handed over to cms.adapter.queue");

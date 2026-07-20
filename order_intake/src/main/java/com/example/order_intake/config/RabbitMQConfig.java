@@ -1,5 +1,8 @@
 package com.example.order_intake.config;
 
+//import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,6 +15,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue orderIntakeQueue(){
         return new Queue(order_intake_queue, true);
+    }
+
+    @Bean
+    public MessageConverter jsonMessageConverter() {
+        return new JacksonJsonMessageConverter();
     }
 
 }
