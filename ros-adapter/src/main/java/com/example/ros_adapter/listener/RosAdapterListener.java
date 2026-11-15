@@ -4,14 +4,18 @@ import com.example.ros_adapter.config.RabbitMQConfig;
 import com.example.ros_adapter.dto.OrderDTO;
 import com.rabbitmq.client.Channel;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,17 +28,15 @@ public class RosAdapterListener {
     @Value("${ros.api.key}")
     private String rosApiKey;
 
-    private final WebClient webClient;
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
-    public RosAdapterListener() {
-        this.webClient = WebClient.builder().build();
-    }
+    private final WebClient webClient = WebClient.builder().build();
 
     @RabbitListener(queues = RabbitMQConfig.ROS_ADAPTER_QUEUE)
     public void handleRouteOptimization(OrderDTO orderDTO, Channel channel, @Header(AmqpHeaders.DELIVERY_TAG) long tag) throws IOException {
-        System.out.println("\n🗺️ [ROS ADAPTER] Picked up Order: " + orderDTO.getOrderId() + " from ros.adapter.queue");
+        System.out.println("\n🗺️ [ROS ADAPTER] Picked up Order: " + orderDTO.getOrderId());
 
-        // Translate internal OrderDTO -> Cloud ROS Vendor REST Schema
         Map<String, Object> vendorRequest = Map.of(
                 "orderId", orderDTO.getOrderId(),
                 "clientId", orderDTO.getClientId(),
@@ -45,26 +47,35 @@ public class RosAdapterListener {
         );
 
         try {
-            System.out.println("🗺️ [ROS ADAPTER] Sending REST POST to Cloud ROS Vendor (" + rosApiUrl + ")...");
-
-            String response = this.webClient.post()
+            Map<String, Object> rosResponse = this.webClient.post()
                     .uri(rosApiUrl)
                     .header("X-API-Key", rosApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(vendorRequest)
                     .retrieve()
-                    .bodyToMono(String.class)
+                    .bodyToMono(new ParameterizedTypeReference>() {})
                     .block();
 
-            System.out.println("✔ [ROS ADAPTER] Cloud ROS Optimized Route Confirmed: " + response);
+            System.out.println("✔ [ROS ADAPTER] Cloud ROS Confirmed: " + rosResponse);
 
-            // Acknowledge RabbitMQ only after 200 OK from Cloud ROS
+            // Build Enriched Driver Manifest Payload
+            Map<String, Object> driverManifestPayload = new HashMap<>();
+            driverManifestPayload.put("orderId", orderDTO.getOrderId());
+            driverManifestPayload.put("clientId", orderDTO.getClientId());
+            driverManifestPayload.put("address", orderDTO.getAddress());
+            driverManifestPayload.put("routeId", rosResponse != null ? rosResponse.get("routeId") : "RT-DEFAULT");
+            driverManifestPayload.put("assignedVehicle", rosResponse != null ? rosResponse.get("assignedVehicle") : "VAN-CMB-01");
+            driverManifestPayload.put("estimatedDistanceKm", rosResponse != null ? rosResponse.get("estimatedDistanceKm") : 5.0);
+            driverManifestPayload.put("estimatedEtaMinutes", rosResponse != null ? rosResponse.get("estimatedEtaMinutes") : 15);
+
+            // Forward to Route & Driver Service Queue BEFORE Acking
+            rabbitTemplate.convertAndSend(RabbitMQConfig.DRIVER_DISPATCH_QUEUE, driverManifestPayload);
+            System.out.println("➡️ [ROS ADAPTER] Forwarded Manifest for " + orderDTO.getOrderId() + " to driver.dispatch.queue");
+
             channel.basicAck(tag, false);
-            System.out.println("🏁 [ROS ADAPTER] Final ACK sent. End-to-End SwiftLogistics Pipeline Complete!");
 
         } catch (Exception e) {
-            System.err.println("❌ [ROS ADAPTER] Failed to reach Cloud ROS API: " + e.getMessage());
-            // Re-queue message so it stays safe in ros.adapter.queue if Cloud ROS is toggled offline
+            System.err.println("❌ [ROS ADAPTER] Cloud ROS call failed: " + e.getMessage());
             channel.basicNack(tag, false, true);
         }
     }

@@ -10,16 +10,20 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String ROS_ADAPTER_QUEUE = "ros.adapter.queue";
+    public static final String DRIVER_DISPATCH_QUEUE = "driver.dispatch.queue"; // <-- ADD THIS
 
-    // Ensures incoming JSON messages from wms-adapter map cleanly to local OrderDTO
     @Bean
     public MessageConverter jsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
     }
 
-    // Automatically creates ros.adapter.queue in RabbitMQ on startup
     @Bean
     public Queue rosAdapterQueue() {
         return new Queue(ROS_ADAPTER_QUEUE, true);
+    }
+
+    @Bean
+    public Queue driverDispatchQueue() {
+        return new Queue(DRIVER_DISPATCH_QUEUE, true);
     }
 }
