@@ -20,4 +20,9 @@ public class RabbitMQConfig {
 //            return new Queue(WMS_ADAPTER_QUEUE, true); // durable queue
 //        }
 
+        @Bean
+        public Queue rosAdapterQueue() {
+            return new Queue(ROS_ADAPTER_QUEUE, true);
+        }
+
 }

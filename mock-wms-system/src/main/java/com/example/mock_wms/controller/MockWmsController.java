@@ -16,14 +16,14 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class MockWmsController {
 
     // Thread-safe in-memory warehouse dispatch ledger
-    private final List> dispatchLedger = new CopyOnWriteArrayList<>();
+    private final List<Map<String, String>> dispatchLedger = new CopyOnWriteArrayList<>();
 
     // Feature flag to simulate warehouse floor/API downtime
     private volatile boolean isSystemOnline = true;
 
     // 1. WAREHOUSE DISPATCH ENDPOINT (Called by WmsAdapterListener on port 8004)
     @PostMapping("/mock-wms/api/dispatch")
-    public ResponseEntity> handleWarehouseDispatch(@RequestBody Map<String, Object> orderPayload) {
+    public ResponseEntity<Map<String, Object>> handleWarehouseDispatch(@RequestBody Map<String, Object> orderPayload) {
         if (!isSystemOnline) {
             System.out.println("⚠️ [MOCK WMS] Rejected incoming dispatch — Warehouse System is OFFLINE (503).");
             return ResponseEntity.status(503).body(Map.of(
@@ -66,7 +66,7 @@ public class MockWmsController {
 
     // 2. FRONTEND DASHBOARD REST ENDPOINTS
     @GetMapping("/api/mock-wms/dispatches")
-    public List> getDispatches() {
+    public List<Map<String, String>> getDispatches() {
         return dispatchLedger;
     }
 

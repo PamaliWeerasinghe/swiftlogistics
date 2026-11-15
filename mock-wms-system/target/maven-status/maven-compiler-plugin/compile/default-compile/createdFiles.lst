@@ -1,0 +1,3 @@
+com\example\mock_wms\MockWmsApplication.class
+com\example\mock_wms_system\MockWmsSystemApplication.class
+com\example\mock_wms\controller\MockWmsController.class
