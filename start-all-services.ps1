@@ -3,6 +3,7 @@ $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $services = @(
     @{ Name = "CMS"; Path = Join-Path $root "CMS"; Url = "http://localhost:8080" },
     @{ Name = "cms_adapter"; Path = Join-Path $root "cms_adapter"; Url = "http://localhost:8003" },
+    @{ Name = "mock-ros-cloud"; Path = Join-Path $root "mock-ros-cloud"; Url = "http://localhost:8082" },
     @{ Name = "mock-wms-system"; Path = Join-Path $root "mock-wms-system"; Url = "http://localhost:8081" },
     @{ Name = "order_intake"; Path = Join-Path $root "order_intake"; Url = "http://localhost:8001" },
     @{ Name = "order_processing"; Path = Join-Path $root "order_processing"; Url = "http://localhost:8002" },

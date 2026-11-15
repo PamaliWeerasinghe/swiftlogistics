@@ -1,4 +1,4 @@
-package com.example.mock_ros.controller;
+package com.example.mock_ros_cloud.controller;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -19,7 +19,7 @@ public class RosCloudController {
     private String expectedApiKey;
 
     // Thread-safe list storing generated routes for the live dashboard
-    private final List> optimizedRoutes = new CopyOnWriteArrayList<>();
+    private final List<Map<String, Object>> optimizedRoutes = new CopyOnWriteArrayList<>();
 
     // Simulated third-party fleet availability pool
     private final List<String> availableFleet = List.of(
@@ -33,7 +33,7 @@ public class RosCloudController {
 
     // 1. CLOUD REST API ENDPOINT (Called by ros-adapter on port 8005)
     @PostMapping("/api/v1/routes/optimize")
-    public ResponseEntity> optimizeRoute(
+    public ResponseEntity<Map<String, Object>> optimizeRoute(
             @RequestHeader(value = "X-API-Key", required = false) String apiKey,
             @RequestBody Map<String, Object> requestPayload) {
 
@@ -92,7 +92,7 @@ public class RosCloudController {
 
     // 2. DASHBOARD UI ENDPOINTS (Polled by index.html)
     @GetMapping("/api/mock-ros/routes")
-    public List> getRoutes() {
+    public List<Map<String, Object>> getRoutes() {
         return optimizedRoutes;
     }
 
