@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Legacy CMS Mainframe Console</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background-color: #0d1117; color: #58a6ff; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { border-bottom: 2px solid #21262d; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { padding: 5px 15px; font-weight: bold; border-radius: 3px; }
+        .online { background-color: #238636; color: white; }
+        .offline { background-color: #da3633; color: white; }
+        button { font-family: inherit; background-color: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 8px 16px; cursor: pointer; border-radius: 6px; }
+        button:hover { background-color: #30363d; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
+        th, td { padding: 12px; border: 1px solid #30363d; }
+        th { background-color: #161b22; color: #c9d1d9; }
+        tr:nth-child(even) { background-color: #161b22; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📟 LEGACY CMS DATABASE MONITOR</h1>
+        <div>
+            <span id="statusIndicator" class="status-badge online">ONLINE</span>
+            <button onclick="toggleServerStatus()">Toggle Outage</button>
+        </div>
+    </div>
+
+    <h3>Billing Ledger Entries & Registered Contracts</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>Order ID</th>
+            <th>Client ID</th>
+            <th>Delivery Location</th>
+        </tr>
+        </thead>
+        <tbody id="contractTableBody">
+        <tr>
+            <td colspan="4" style="text-align: center; color: #8b949e;">No transaction entries received yet. Waiting for SOAP inputs...</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const API_BASE = "http://localhost:8080/api/mock-cms";
+
+    async function updateDashboard() {
+        try {
+            // Fetch system configuration status
+            const statusRes = await fetch(`${API_BASE}/status`);
+            const statusData = await statusRes.json();
+            const badge = document.getElementById("statusIndicator");
+            if (statusData.online) {
+                badge.textContent = "ONLINE (SOAP 200 OK)";
+                badge.className = "status-badge online";
+            } else {
+                badge.textContent = "OFFLINE (SOAP 503 FAULT)";
+                badge.className = "status-badge offline";
+            }
+
+            // Fetch transactional data array
+            const contractsRes = await fetch(`${API_BASE}/contracts`);
+            const contracts = await contractsRes.json();
+            const tbody = document.getElementById("contractTableBody");
+
+            if (contracts.length === 0) return;
+
+            tbody.innerHTML = contracts.map(c => `
+                <tr>
+                    <td>[${c.timestamp}]</td>
+                    <td style="color: #79c0ff; font-weight: bold;">${c.orderId}</td>
+                    <td>${c.clientId}</td>
+                    <td><small>${c.address}</small></td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error("Dashboard pull error:", e);
+        }
+    }
+
+    async function toggleServerStatus() {
+        await fetch(`${API_BASE}/toggle`, { method: 'POST' });
+        updateDashboard();
+    }
+
+    // Continuously poll the backend every 2 seconds to simulate dynamic data stream adjustments
+    setInterval(updateDashboard, 2000);
+    window.onload = updateDashboard;
+</script>
+</body>
+</html>

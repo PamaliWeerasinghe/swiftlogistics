@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SwiftLogistics — Warehouse Management Console (WMS)</title>
+    <style>
+        body { font-family: 'Courier New', monospace; background-color: #0d1117; color: #e6edf3; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header { border-bottom: 2px solid #21262d; padding-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { color: #f0883e; margin: 0; font-size: 1.4rem; }
+        .status-badge { padding: 6px 14px; font-weight: bold; border-radius: 4px; margin-right: 10px; }
+        .online { background-color: #238636; color: #ffffff; }
+        .offline { background-color: #da3633; color: #ffffff; }
+        button { font-family: inherit; background-color: #21262d; color: #c9d1d9; border: 1px solid #30363d; padding: 8px 16px; cursor: pointer; border-radius: 6px; }
+        button:hover { background-color: #30363d; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; text-align: left; }
+        th, td { padding: 12px; border: 1px solid #30363d; }
+        th { background-color: #161b22; color: #8b949e; }
+        tr:nth-child(even) { background-color: #161b22; }
+        .pill { background-color: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+        .bay { color: #3fb950; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏭 SWIFT-WMS WAREHOUSE FLOOR MONITOR (:8081)</h1>
+        <div>
+            <span id="statusIndicator" class="status-badge online">ONLINE (HTTP 200)</span>
+            <button onclick="toggleServerStatus()">Toggle Warehouse Outage</button>
+        </div>
+    </div>
+
+    <h3>Active Picking Slips & Bay Allocations</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Timestamp</th>
+            <th>Picking Slip</th>
+            <th>Order ID</th>
+            <th>Client ID</th>
+            <th>Destination Address</th>
+            <th>Loading Bay</th>
+            <th>Fulfillment Status</th>
+        </tr>
+        </thead>
+        <tbody id="dispatchTableBody">
+        <tr>
+            <td colspan="7" style="text-align: center; color: #8b949e;">No warehouse dispatches received yet. Waiting for WMS Adapter...</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const API_BASE = "http://localhost:8081/api/mock-wms";
+
+    async function updateDashboard() {
+        try {
+            const statusRes = await fetch(`${API_BASE}/status`);
+            const statusData = await statusRes.json();
+            const badge = document.getElementById("statusIndicator");
+
+            if (statusData.online) {
+                badge.textContent = "ONLINE (HTTP 200 OK)";
+                badge.className = "status-badge online";
+            } else {
+                badge.textContent = "OFFLINE (HTTP 503 DOWN)";
+                badge.className = "status-badge offline";
+            }
+
+            const dispatchRes = await fetch(`${API_BASE}/dispatches`);
+            const dispatches = await dispatchRes.json();
+            const tbody = document.getElementById("dispatchTableBody");
+
+            if (dispatches.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #8b949e;">No warehouse dispatches received yet. Waiting for WMS Adapter...</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = dispatches.map(d => `
+                <tr>
+                    <td>[${d.timestamp}]</td>
+                    <td><span class="pill">${d.pickingSlipId}</span></td>
+                    <td style="color: #ffa657; font-weight: bold;">${d.orderId}</td>
+                    <td>${d.clientId}</td>
+                    <td><small>${d.address}</small></td>
+                    <td class="bay">${d.assignedBay}</td>
+                    <td style="color: #3fb950;">✔ ${d.status}</td>
+                </tr>
+            `).join('');
+        } catch (e) {
+            console.error("WMS Dashboard poll error:", e);
+        }
+    }
+
+    async function toggleServerStatus() {
+        await fetch(`${API_BASE}/toggle`, { method: 'POST' });
+        updateDashboard();
+    }
+
+    setInterval(updateDashboard, 2000);
+    window.onload = updateDashboard;
+</script>
+</body>
+</html>
