@@ -6,32 +6,32 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOriginPatterns: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
-      routes:
-        - id: order-intake-route
-          uri: http://localhost:8001
-          predicates:
-            - Path=/api/v1/orders
-            - Path=/api/v1/orders/**
-            - Path=/api/orders/**
-        - id: notification-tracking-route
-          uri: http://localhost:8007
-          predicates:
-            - Path=/api/tracking/**
-        - id: route-driver-route
-          uri: http://localhost:8006
-          predicates:
-            - Path=/api/driver/**
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: true
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+          routes:
+            - id: order-intake-route
+              uri: http://localhost:8001
+              predicates:
+                - Path=/api/v1/orders,/api/v1/orders/**,/api/orders/**
+            - id: notification-tracking-route
+              uri: http://localhost:8007
+              predicates:
+                - Path=/api/tracking/**
+            - id: route-driver-route
+              uri: http://localhost:8006
+              predicates:
+                - Path=/api/driver/**
