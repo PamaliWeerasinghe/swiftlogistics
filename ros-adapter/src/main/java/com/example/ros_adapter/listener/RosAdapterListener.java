@@ -46,20 +46,21 @@ public class RosAdapterListener {
                 "optimizationGoal", "MINIMIZE_TRANSIT_TIME"
         );
 
+        Map<String, Object> driverManifestPayload = new HashMap<>();
+
         try {
             Map<String, Object> rosResponse = this.webClient.post()
-                    .uri(rosApiUrl)
-                    .header("X-API-Key", rosApiKey)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(vendorRequest)
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                    .block();
+                   .uri(rosApiUrl)
+                   .header("X-API-Key", rosApiKey)
+                   .contentType(MediaType.APPLICATION_JSON)
+                   .bodyValue(vendorRequest)
+                   .retrieve()
+                   .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                   .block();
 
             System.out.println("✔ [ROS ADAPTER] Cloud ROS Confirmed: " + rosResponse);
 
-            // Build Enriched Driver Manifest Payload
-            Map<String, Object> driverManifestPayload = new HashMap<>();
+            driverManifestPayload = new HashMap<>();
             driverManifestPayload.put("orderId", orderDTO.getOrderId());
             driverManifestPayload.put("clientId", orderDTO.getClientId());
             driverManifestPayload.put("address", orderDTO.getAddress());
@@ -68,9 +69,15 @@ public class RosAdapterListener {
             driverManifestPayload.put("estimatedDistanceKm", rosResponse != null ? rosResponse.get("estimatedDistanceKm") : 5.0);
             driverManifestPayload.put("estimatedEtaMinutes", rosResponse != null ? rosResponse.get("estimatedEtaMinutes") : 15);
 
-            // Forward to Route & Driver Service Queue BEFORE Acking
             rabbitTemplate.convertAndSend(RabbitMQConfig.DRIVER_DISPATCH_QUEUE, driverManifestPayload);
             System.out.println("➡️ [ROS ADAPTER] Forwarded Manifest for " + orderDTO.getOrderId() + " to driver.dispatch.queue");
+
+            rabbitTemplate.convertAndSend("order.tracking.queue", Map.of(
+                   "orderId", orderDTO.getOrderId(),
+                   "clientId", orderDTO.getClientId(),
+                   "stage", "ROUTE_OPTIMIZED",
+                   "details", "Assigned Vehicle: " + driverManifestPayload.get("assignedVehicle")
+            ));
 
             channel.basicAck(tag, false);
 

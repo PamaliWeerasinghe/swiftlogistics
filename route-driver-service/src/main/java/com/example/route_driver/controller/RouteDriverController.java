@@ -4,6 +4,8 @@ import com.example.route_driver.config.RabbitMQConfig;
 import com.rabbitmq.client.Channel;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.support.AmqpHeaders;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequestMapping("/api/driver")
 @CrossOrigin(origins = "*")
 public class RouteDriverController {
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     private final List<Map<String, Object>> activeManifests = new CopyOnWriteArrayList<>();
 

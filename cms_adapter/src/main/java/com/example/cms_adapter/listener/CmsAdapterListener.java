@@ -12,6 +12,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Component
 public class CmsAdapterListener {
@@ -77,8 +78,5 @@ public class CmsAdapterListener {
                 "      </ord:Order>\n" +
                 "   </soapenv:Body>\n" +
                 "</soapenv:Envelope>";
-
     }
-
-
 }
