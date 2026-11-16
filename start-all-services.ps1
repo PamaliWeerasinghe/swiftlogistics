@@ -8,6 +8,7 @@ $services = @(
     @{ Name = "order_intake"; Path = Join-Path $root "order_intake"; Url = "http://localhost:8001" },
     @{ Name = "order_processing"; Path = Join-Path $root "order_processing"; Url = "http://localhost:8002" },
     @{ Name = "ros-adapter"; Path = Join-Path $root "ros-adapter"; Url = "http://localhost:8005" },
+    @{ Name = "route-driver-service"; Path = Join-Path $root "route-driver-service"; Url = "http://localhost:8006" },
     @{ Name = "wms_adapter"; Path = Join-Path $root "wms_adapter"; Url = "http://localhost:8004" }
 )
 

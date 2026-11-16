@@ -21,7 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @CrossOrigin(origins = "*")
 public class RouteDriverController {
 
-    private final List> activeManifests = new CopyOnWriteArrayList<>();
+    private final List<Map<String, Object>> activeManifests = new CopyOnWriteArrayList<>();
 
     private final List<String> driverRoster = List.of(
             "DRV-101 • Kasun Perera",
@@ -57,13 +57,13 @@ public class RouteDriverController {
 
     // 2. MOBILE APP ENDPOINT: Fetch all assigned driver manifests
     @GetMapping("/manifests")
-    public List> getManifests() {
+    public List<Map<String, Object>> getManifests() {
         return activeManifests;
     }
 
     // 3. MOBILE APP ENDPOINT: Driver updates delivery status & Proof of Delivery (PoD)
     @PostMapping("/manifests/{orderId}/status")
-    public ResponseEntity> updateDeliveryStatus(
+    public ResponseEntity<Map<String, Object>> updateDeliveryStatus(
             @PathVariable String orderId,
             @RequestBody Map<String, String> statusUpdate) {
 

@@ -53,7 +53,7 @@ public class RosAdapterListener {
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(vendorRequest)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference>() {})
+                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                     .block();
 
             System.out.println("✔ [ROS ADAPTER] Cloud ROS Confirmed: " + rosResponse);
