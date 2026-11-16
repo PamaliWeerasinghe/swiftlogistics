@@ -1,0 +1,43 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      # Centralized CORS so Client Portal & Delivery App never hit browser CORS errors
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+
+      # Microservice Routing Table
+      routes:
+        # 1. Order Intake Gateway (:8001)
+        - id: order-intake-route
+          uri: http://localhost:8001
+          predicates:
+            - Path=/api/v1/orders/**
+
+        # 2. Notification & Tracking Service (:8007)
+        - id: notification-tracking-route
+          uri: http://localhost:8007
+          predicates:
+            - Path=/api/tracking/**
+
+        # 3. Route & Driver Service (:8006)
+        - id: route-driver-route
+          uri: http://localhost:8006
+          predicates:
+            - Path=/api/driver/**

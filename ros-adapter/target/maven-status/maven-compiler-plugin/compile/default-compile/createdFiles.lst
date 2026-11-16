@@ -1,0 +1,5 @@
+com\example\ros_adapter\listener\RosAdapterListener.class
+com\example\ros_adapter\dto\OrderDTO.class
+com\example\ros_adapter\config\RabbitMQConfig.class
+com\example\ros_adapter\listener\RosAdapterListener$1.class
+com\example\ros_adapter\RosAdapterApplication.class
