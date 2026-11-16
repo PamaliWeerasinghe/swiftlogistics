@@ -24,7 +24,7 @@ public class TrackingController {
     private final Map<String, Map<String, Object>> orderTrackingStore = new ConcurrentHashMap<>();
 
     // Stores dispatched SMS/Email notifications for the live log
-    private final List> notificationFeed = new CopyOnWriteArrayList<>();
+    private final List<Map<String, Object>> notificationFeed = new CopyOnWriteArrayList<>();
 
     // Monotonic rank prevents out-of-order Competing Consumer threads from regressing status
     private static final Map<String, Integer> STAGE_RANK = Map.of(
@@ -57,7 +57,7 @@ public class TrackingController {
                     existing.put("currentRank", STAGE_RANK.getOrDefault(stage, 1));
                     existing.put("latestDetails", details);
                     existing.put("updatedAt", timestamp);
-                    existing.put("history", new CopyOnWriteArrayList>());
+                    existing.put("history", new CopyOnWriteArrayList<Map<String, Object>>());
                 } else {
                     int incomingRank = STAGE_RANK.getOrDefault(stage, 1);
                     int currentRank = (int) existing.getOrDefault("currentRank", 0);
@@ -70,7 +70,7 @@ public class TrackingController {
                     }
                 }
 
-                List> history = (List>) existing.get("history");
+                List<Map<String, Object>> history = (List<Map<String, Object>>) existing.get("history");
                 history.add(0, Map.of(
                         "stage", stage,
                         "details", details,
@@ -100,20 +100,20 @@ public class TrackingController {
 
     // 2. REST API: Get all tracked orders
     @GetMapping("/orders")
-    public Collection> getAllTrackedOrders() {
+    public Collection<Map<String, Object>> getAllTrackedOrders() {
         return orderTrackingStore.values();
     }
 
     // 3. REST API: Get specific order tracking timeline by orderId
     @GetMapping("/orders/{orderId}")
-    public ResponseEntity> getOrderTimeline(@PathVariable String orderId) {
+    public ResponseEntity<Map<String, Object>> getOrderTimeline(@PathVariable String orderId) {
         Map<String, Object> record = orderTrackingStore.get(orderId);
         return record != null ? ResponseEntity.ok(record) : ResponseEntity.notFound().build();
     }
 
     // 4. REST API: Get live SMS/Email notification feed
     @GetMapping("/notifications")
-    public List> getNotifications() {
+    public List<Map<String, Object>> getNotifications() {
         return notificationFeed;
     }
 }

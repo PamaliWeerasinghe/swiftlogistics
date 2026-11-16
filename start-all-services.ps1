@@ -7,6 +7,7 @@ $services = @(
     @{ Name = "mock-wms-system"; Path = Join-Path $root "mock-wms-system"; Url = "http://localhost:8081" },
     @{ Name = "order_intake"; Path = Join-Path $root "order_intake"; Url = "http://localhost:8001" },
     @{ Name = "order_processing"; Path = Join-Path $root "order_processing"; Url = "http://localhost:8002" },
+    @{ Name = "notification-tracking-service"; Path = Join-Path $root "notification-tracking-service"; Url = "http://localhost:8007" },
     @{ Name = "ros-adapter"; Path = Join-Path $root "ros-adapter"; Url = "http://localhost:8005" },
     @{ Name = "route-driver-service"; Path = Join-Path $root "route-driver-service"; Url = "http://localhost:8006" },
     @{ Name = "wms_adapter"; Path = Join-Path $root "wms_adapter"; Url = "http://localhost:8004" }
