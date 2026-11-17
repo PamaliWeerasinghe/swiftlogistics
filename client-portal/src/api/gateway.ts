@@ -15,10 +15,19 @@ export interface TrackingHistoryItem {
 export interface TrackedOrder {
     orderId: string;
     clientId: string;
+    address?: string;
     currentStage: string;
     currentRank: number;
     latestDetails: string;
     updatedAt: string;
+    assignedDriver?: string;
+    assignedVehicle?: string;
+    originLat?: number;
+    originLng?: number;
+    destLat?: number;
+    destLng?: number;
+    currentLat?: number;
+    currentLng?: number;
     history: TrackingHistoryItem[];
 }
 

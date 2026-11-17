@@ -29,6 +29,9 @@ public class OrderIntake {
     public ResponseEntity<Map<String,String>> createOrder(@RequestBody OrderDTO orderDTO){
         try {
             rabbitTemplate.convertAndSend(RabbitMQConfig.order_intake_queue, orderDTO);
+            // Keep a single canonical order event. Downstream services already have their own
+            // queue/listener flow; duplicating the same message to a second queue here causes
+            // every dependent service to record the order more than once.
 
             Map<String, String> response = new HashMap<>();
             response.put("status","Order accepted and queued safely for processing");
@@ -39,8 +42,7 @@ public class OrderIntake {
         } catch (Exception e) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("status","Failed to accept the order. Please try again..." + e.getMessage());
-            return  new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
-
+            return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
