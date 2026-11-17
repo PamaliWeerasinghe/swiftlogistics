@@ -87,4 +87,32 @@ public class RouteDriverController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    // 1. Inside receiveRouteManifest(...), initialize Colombo warehouse & destination coordinates:
+    manifest.put("originLat", 6.9388); // SwiftLogistics Central Warehouse (Colombo 14 / Port Access)
+    manifest.put("originLng", 79.8745);
+    // Generate realistic Colombo destination coordinates based on address hash
+        double destLat = 6.8800 + (Math.abs(String.valueOf(payload.get("address")).hashCode()) % 60) / 1000.0;
+        double destLng = 79.8550 + (Math.abs(String.valueOf(payload.get("orderId")).hashCode()) % 45) / 1000.0;
+    manifest.put("destLat", destLat);
+    manifest.put("destLng", destLng);
+    manifest.put("currentLat", 6.9388);
+    manifest.put("currentLng", 79.8745);
+
+    // 2. Add this endpoint inside RouteDriverController to accept live GPS updates:
+    @PostMapping("/manifests/{orderId}/location")
+    public ResponseEntity> updateVehicleLocation(
+            @PathVariable String orderId,
+            @RequestBody Map<String, Double> coords) {
+
+        for (Map<String, Object> item : activeManifests) {
+            if (orderId.equals(String.valueOf(item.get("orderId")))) {
+                item.put("currentLat", coords.get("lat"));
+                item.put("currentLng", coords.get("lng"));
+                return ResponseEntity.ok(item);
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
 }
