@@ -14,10 +14,19 @@ export interface DriverManifest {
     deliveryStatus: DeliveryStatus;
     podNotes: string;
     updatedAt: string;
+    failureReason?: string;
+    signatureBase64?: string;
+    photoProofBase64?: string;
     originLat?: number;
     originLng?: number;
     destLat?: number;
     destLng?: number;
+}
+
+export interface DeliveryUpdateOptions {
+    failureReason?: string;
+    signatureBase64?: string;
+    photoProofBase64?: string;
 }
 
 // 1. Fetch active manifests -> API Gateway (:8000) -> Route & Driver Service (:8006)
@@ -33,12 +42,13 @@ export async function fetchDriverManifests(): Promise<DriverManifest[]> {
 export async function submitDeliveryUpdate(
     orderId: string,
     status: DeliveryStatus,
-    podNotes: string
+    podNotes: string,
+    options: DeliveryUpdateOptions = {}
 ): Promise<DriverManifest> {
     const response = await fetch(`${GATEWAY_BASE_URL}/api/driver/manifests/${orderId}/status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, podNotes }),
+        body: JSON.stringify({ status, podNotes, ...options }),
     });
 
     if (!response.ok) {

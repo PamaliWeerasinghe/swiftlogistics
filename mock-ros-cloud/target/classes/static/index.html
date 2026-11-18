@@ -48,7 +48,7 @@
 </div>
 
 <script>
-    const API = "http://localhost:8082/api/mock-ros";
+    const API = "/api/mock-ros";
     async function refresh() {
         try {
             const st = await (await fetch(`${API}/status`)).json();

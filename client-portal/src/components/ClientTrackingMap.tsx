@@ -15,7 +15,6 @@ interface ClientTrackingMapProps {
 }
 
 export const ClientTrackingMap: React.FC<ClientTrackingMapProps> = ({
-                                                                        orderId,
                                                                         stage,
                                                                         originLat = 6.9388,
                                                                         originLng = 79.8745,

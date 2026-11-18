@@ -1,9 +1,16 @@
 package com.example.cms.Controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -16,11 +23,27 @@ import java.util.concurrent.ConcurrentHashMap;
 @CrossOrigin(origins = "*")
 public class MockCmsController {
 
-    // Simulates an internal legacy database table
+    private static final Path CONTRACTS_PATH = Path.of("./data/cms-contracts.json");
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final List<Map<String, String>> contractDatabase = new ArrayList<>();
-
-    // Feature flag to simulate system outages
     private boolean isSystemOnline = true;
+
+    @PostConstruct
+    public void loadContracts() {
+        try {
+            Files.createDirectories(CONTRACTS_PATH.getParent());
+            if (Files.exists(CONTRACTS_PATH)) {
+                List<Map<String, String>> loaded = objectMapper.readValue(
+                        CONTRACTS_PATH.toFile(),
+                        new TypeReference<List<Map<String, String>>>() {}
+                );
+                contractDatabase.clear();
+                contractDatabase.addAll(loaded);
+            }
+        } catch (IOException e) {
+            System.err.println("[CMS] Failed to load persisted contracts: " + e.getMessage());
+        }
+    }
 
     // 1. SOAP ENDPOINT (Called by your CMS Adapter)
     @PostMapping(
@@ -38,15 +61,15 @@ public class MockCmsController {
         String clientId = extractTagValue(requestXml, "ord:ClientId");
         String address = extractTagValue(requestXml, "ord:Address");
 
-        // Save into our mock database array list
         Map<String, String> record = new ConcurrentHashMap<>();
         record.put("orderId", orderId);
         record.put("clientId", clientId);
         record.put("address", address);
+        record.put("status", "ACTIVE");
         record.put("timestamp", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
-        contractDatabase.add(0, record); // Keep newest records at top
+        contractDatabase.add(0, record);
+        persistContracts();
 
-        // Build SOAP Response
         String soapResponseXml =
                 "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:ord=\"http://example.com/order\">\n" +
                         "   <soapenv:Header/>\n" +
@@ -77,6 +100,40 @@ public class MockCmsController {
     public Map<String, Boolean> toggleStatus() {
         this.isSystemOnline = !this.isSystemOnline;
         return Map.of("online", isSystemOnline);
+    }
+
+    @PostMapping("/api/mock-cms/compensate/{orderId}")
+    public ResponseEntity<Map<String, Object>> compensateOrder(@PathVariable String orderId) {
+        for (int i = 0; i < contractDatabase.size(); i++) {
+            Map<String, String> contract = contractDatabase.get(i);
+            if (orderId.equals(contract.get("orderId"))) {
+                contract.put("status", "CANCELLED (COMPENSATED)");
+                contract.put("compensatedAt", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                persistContracts();
+                return ResponseEntity.ok(Map.of(
+                        "orderId", orderId,
+                        "status", "CANCELLED (COMPENSATED)",
+                        "message", "CMS contract compensation applied successfully."
+                ));
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "orderId", orderId,
+                "status", "NOT_FOUND",
+                "message", "No CMS contract found for compensation."
+        ));
+    }
+
+    private void persistContracts() {
+        try {
+            Files.createDirectories(CONTRACTS_PATH.getParent());
+            Path temp = CONTRACTS_PATH.resolveSibling(CONTRACTS_PATH.getFileName() + ".tmp");
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(temp.toFile(), contractDatabase);
+            Files.move(temp, CONTRACTS_PATH, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            System.err.println("[CMS] Failed to persist contracts: " + e.getMessage());
+        }
     }
 
     private String extractTagValue(String xml, String tagName) {

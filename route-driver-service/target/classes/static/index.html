@@ -10,6 +10,7 @@
         .app-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1f2937; padding-bottom: 14px; margin-bottom: 16px; }
         .app-header h2 { margin: 0; font-size: 1.2rem; color: #38bdf8; }
         .live-dot { background: #10b981; color: #064e3b; font-weight: 700; font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; }
+        .live-dot.offline { background: #ef4444; color: #fff; }
         .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
         .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .order-id { font-weight: 700; font-size: 1.05rem; color: #f8fafc; }
@@ -37,7 +38,7 @@
             <h2>🚚 SwiftDriver App</h2>
             <small style="color:#94a3b8;">Route & Driver Service (:8006)</small>
         </div>
-        <span class="live-dot">LIVE SYNC</span>
+        <span id="syncStatus" class="live-dot">LIVE SYNC</span>
     </div>
 
     <div id="manifestList">
@@ -46,15 +47,23 @@
 </div>
 
 <script>
-    const API = "http://localhost:8006/api/driver";
+    const API = "/api/driver";
 
     async function loadManifests() {
+        const statusBadge = document.getElementById("syncStatus");
         try {
-            const res = await fetch(`${API}/manifests`);
+            const res = await fetch(`${API}/manifests`, { cache: "no-store" });
+            if (!res.ok) throw new Error(`Driver service returned HTTP ${res.status}`);
             const list = await res.json();
             const container = document.getElementById("manifestList");
 
-            if (!list.length) return;
+            statusBadge.textContent = "LIVE SYNC";
+            statusBadge.className = "live-dot";
+
+            if (!list.length) {
+                container.innerHTML = '<div class="empty">No active route manifests assigned yet.<br>Waiting for ROS Adapter...</div>';
+                return;
+            }
 
             container.innerHTML = list.map(item => `
                 <div class="card">
@@ -76,6 +85,9 @@
                 </div>
             `).join('');
         } catch (err) {
+            statusBadge.textContent = "OFFLINE";
+            statusBadge.className = "live-dot offline";
+            document.getElementById("manifestList").innerHTML = '<div class="empty">Driver service is unreachable.<br>Start Route & Driver Service on port 8006.</div>';
             console.error("Failed to fetch driver manifests:", err);
         }
     }

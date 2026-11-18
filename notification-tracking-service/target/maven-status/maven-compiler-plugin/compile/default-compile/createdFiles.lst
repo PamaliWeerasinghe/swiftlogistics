@@ -1,3 +1,4 @@
 com\example\notification_tracking\config\RabbitMQConfig.class
+com\example\notification_tracking\controller\TrackingController$1.class
 com\example\notification_tracking\NotificationTrackingServiceApplication.class
 com\example\notification_tracking\controller\TrackingController.class

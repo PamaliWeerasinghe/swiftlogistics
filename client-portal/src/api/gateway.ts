@@ -39,6 +39,14 @@ export interface NotificationAlert {
     message: string;
 }
 
+export interface TrackingStreamEvent {
+    type?: string;
+    order?: TrackedOrder;
+    notification?: NotificationAlert;
+    orders?: Record<string, TrackedOrder>;
+    notifications?: NotificationAlert[];
+}
+
 // 1. Submit Order -> API Gateway (:8000) -> Order Intake (:8001)
 export async function submitOrder(payload: OrderRequest): Promise<void> {
     const response = await fetch(`${GATEWAY_BASE_URL}/api/v1/orders`, {
@@ -64,4 +72,26 @@ export async function fetchNotifications(): Promise<NotificationAlert[]> {
     const response = await fetch(`${GATEWAY_BASE_URL}/api/tracking/notifications`);
     if (!response.ok) return [];
     return response.json();
+}
+
+export function openTrackingStream(onUpdate: (event: TrackingStreamEvent) => void): EventSource {
+    const connection = new EventSource(`${GATEWAY_BASE_URL}/api/tracking/stream`);
+    connection.onmessage = (event) => {
+        try {
+            onUpdate(JSON.parse(event.data));
+        } catch {
+            onUpdate({ type: 'tracking-update', order: undefined, notification: undefined });
+        }
+    };
+    connection.addEventListener('tracking-update', (event: MessageEvent) => {
+        try {
+            onUpdate(JSON.parse(event.data));
+        } catch {
+            onUpdate({ type: 'tracking-update', order: undefined, notification: undefined });
+        }
+    });
+    connection.onerror = () => {
+        connection.close();
+    };
+    return connection;
 }

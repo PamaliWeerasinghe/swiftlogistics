@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitMQConfig {
 
     public static final String ORDER_TRACKING_QUEUE = "order.tracking.queue";
+    public static final String ORDER_DLQ = "order.dlq";
+    public static final String ORDER_COMPENSATION_QUEUE = "order.compensation.queue";
 
     @Bean
     public MessageConverter jsonMessageConverter() {
@@ -22,5 +24,15 @@ public class RabbitMQConfig {
         return QueueBuilder.durable(ORDER_TRACKING_QUEUE)
                 .withArgument("x-queue-mode", "lazy")
                 .build();
+    }
+
+    @Bean
+    public Queue orderDlq() {
+        return QueueBuilder.durable(ORDER_DLQ).build();
+    }
+
+    @Bean
+    public Queue orderCompensationQueue() {
+        return QueueBuilder.durable(ORDER_COMPENSATION_QUEUE).build();
     }
 }
